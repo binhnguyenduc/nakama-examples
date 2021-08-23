@@ -50,9 +50,9 @@ export default class Chat extends Component {
     this.client = new nakamajs.Client(
       this.state.serverkey,
       this.state.host,
-      this.state.port
+      this.state.port,
+      this.state.ssl
     );
-    this.client.ssl = this.state.useSSL;
 
     this.client.ondisconnect = event => {
       this.addLogMessage("Disconnected from server.");
