@@ -11,21 +11,19 @@ import {
   Table
 } from "semantic-ui-react";
 import * as nakamajs from "@heroiclabs/nakama-js";
-import sha1 from 'crypto-js/sha1';
-import Base64 from 'crypto-js/enc-base64';
 import randomstring from 'randomstring';
 
-const ROOM_NAME = "Room1";
 const INTERVAL_PERIOD_MS = 2000;
 
 const errorHandler = error => console.log("Error occurred: %o", error);
 
 export default class Chat extends Component {
   state = {
-    host: "127.0.0.1",
-    port: "7350",
-    serverkey: "defaultkey",
-    username: randomstring.generate(6),
+    host: "enbox-uat.entrade.com.vn",
+    port: "443",
+    serverkey: "f1tku7AGcpuPTIjVUNFKY1Yfe9mJgiMKVlynOm5P4",
+    username: "dnse-0001000115",
+    groupId: "d09439ee-8ba4-4396-90e7-9aaf814954a9",
     ssl: false,
     connected: false,
     roomId: "",
@@ -62,18 +60,20 @@ export default class Chat extends Component {
     };
 
     this.client
-      .authenticateDevice(
-        Base64.stringify(sha1(this.state.username)),
+      .authenticateCustom(
+        this.state.username,
         true,
         this.state.username,
       )
       .then(session => {
         console.info("Successfully authenticated:", session);
+        this.session = session;
         this.sessionHandler(session);
       })
       .catch(error => {
         console.log("error : ", error);
       });
+    
   };
 
   sessionHandler = session => {
@@ -87,8 +87,8 @@ export default class Chat extends Component {
       this.socket
         .send({
           channel_join: {
-            type: 1,
-            target: ROOM_NAME,
+            type: 3,
+            target: this.state.groupId,
             persistence: true,
             hidden: false
           }
@@ -102,18 +102,36 @@ export default class Chat extends Component {
             roomId: response.channel.id
           });
 
-          let data = { data: "Hello!" };
+          this.getHistory(session, response.channel.id);
 
-          this.socket
-            .send({
-              channel_message_send: {
-                channel_id: response.channel.id,
-                content: data
-              }
-            })
-            .catch(errorHandler);
+          // let data = { data: "Hello!" };
+
+          // this.socket
+          //   .send({
+          //     channel_message_send: {
+          //       channel_id: response.channel.id,
+          //       content: data
+          //     }
+          //   })
+          //   .catch(errorHandler);
         });
     });
+  };
+
+  getHistory = (session, roomId) => {
+    this.client.
+      listChannelMessages(
+          session,
+          roomId,
+          100,
+          false,
+      )
+      .then(messageList => {
+        messageList.messages.forEach(message => this.addMessage(message));
+      })
+      .catch(error => {
+        console.log("errors: ", error);
+      });
   };
 
   submitMessage = event => {
@@ -211,6 +229,12 @@ export default class Chat extends Component {
               value={this.state.username}
               onChange={this.changeField("username")}
             />
+            <Form.Field
+              control={Input}
+              label="Group"
+              value={this.state.groupId}
+              onChange={this.changeField("groupId")}
+            />
           </Form.Group>
           <Form.Group inline>
             <Form.Field
@@ -233,7 +257,7 @@ export default class Chat extends Component {
           Messages
         </Header>
         <div
-          style={{ height: "180px", marginBottom: "1em", overflowY: "scroll" }}
+          style={{ height: "480px", marginBottom: "1em", overflowY: "scroll" }}
         >
           <Comment.Group minimal>
             {messages.map(message => (
@@ -244,7 +268,7 @@ export default class Chat extends Component {
                     <span>{new Date(message.create_time).toTimeString()}</span>
                   </Comment.Metadata>
                   <Comment.Text>
-                    <p>{message.content.data}</p>
+                    <p>{JSON.stringify(message.content)}</p>
                   </Comment.Text>
                 </Comment.Content>
               </Comment>

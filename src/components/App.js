@@ -18,10 +18,7 @@ export default () => {
       </Menu>
 
       <Grid padded divided>
-        <Grid.Row columns={2}>
-          <Grid.Column>
-            <Chat />
-          </Grid.Column>
+        <Grid.Row columns={1}>
           <Grid.Column>
             <Chat />
           </Grid.Column>
